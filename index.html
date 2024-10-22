@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
+  <title>To-Do List</title>
+</head>
+<body>
+  <div class="container">
+    <h1>To-Do List</h1>
+    <div class="input-group">
+      <input type="text" id="taskInput" placeholder="Add a new task...">
+      <button id="addTaskButton">Add Task</button>
+    </div>
+    <ul id="todoList"></ul>
+  </div>
+
+  <script>
+    // Function to fetch all tasks
+    const fetchTasks = async () => {
+      try {
+        const res = await fetch('/api/todos');
+        if (!res.ok) throw new Error('Failed to fetch tasks');
+        const tasks = await res.json();
+        const todoList = document.getElementById('todoList');
+        todoList.innerHTML = '';  // Clear the existing list
+
+        tasks.forEach(task => {
+          const li = document.createElement('li');
+          li.innerHTML = `
+            ${task.task} 
+            <button onclick="deleteTask(${task.id})">Delete</button>
+          `;
+          todoList.appendChild(li);
+        });
+      } catch (error) {
+        console.error('Error fetching tasks:', error);
+        alert('Failed to load tasks.');
+      }
+    };
+
+    // Function to add a new task
+    const addTask = async () => {
+      const taskInput = document.getElementById('taskInput').value.trim();
+      if (!taskInput) return alert('Please enter a task');
+
+      try {
+        const res = await fetch('/api/todos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ task: taskInput })
+        });
+        
+        if (!res.ok) throw new Error('Failed to add task');
+        await fetchTasks();  // Reload tasks
+        document.getElementById('taskInput').value = '';  // Clear input field
+      } catch (error) {
+        console.error('Error adding task:', error);
+        alert('Failed to add task.');
+      }
+    };
+
+    // Function to delete a task
+    const deleteTask = async (id) => {
+      if (!confirm('Are you sure you want to delete this task?')) return;
+      
+      try {
+        const res = await fetch(`/api/todos/${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Failed to delete task');
+        await fetchTasks();  // Reload tasks
+      } catch (error) {
+        console.error('Error deleting task:', error);
+        alert('Failed to delete task.');
+      }
+    };
+
+    // Add click event listener for the "Add Task" button
+    document.getElementById('addTaskButton').addEventListener('click', addTask);
+
+    // Fetch tasks when the page loads
+    window.onload = fetchTasks;
+  </script>
+</body>
+</html>
